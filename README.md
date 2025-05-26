@@ -1,2 +1,2 @@
 > [!TIP] 
-> POC with FastaAPI + Astro + React + Tailwind
+> POC with FastAPI + Astro + React + Tailwind
