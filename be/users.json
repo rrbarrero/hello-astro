@@ -1,0 +1,20 @@
+[
+    {
+        "id": "492280ce-d1ed-442e-a5f8-789fe00553c3",
+        "username": "user1",
+        "email": "mail1@domain.com",
+        "password": "123456"
+    },
+    {
+        "id": "492280ce-d1ed-442e-a5f8-789fe00553c4",
+        "username": "user2",
+        "email": "mail2@domain.com",
+        "password": "123456"
+    },
+    {
+        "id": "492280ce-d1ed-442e-a5f8-789fe00553c5",
+        "username": "user3",
+        "email": "mail3@domain.com",
+        "password": "123456"
+    }
+]

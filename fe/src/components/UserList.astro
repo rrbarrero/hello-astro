@@ -1,9 +1,10 @@
 ---
-import UserListClient from './UserListClient.tsx';
+import { Repository } from '../repositories/backend';
+import type { User } from '../entities/User';
+import UserListClient from '../components/UserListClient.tsx';
+
+const userRepo = new Repository<User>('users');
+const users = await userRepo.getAll(); // SSR
 ---
 
-<h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4 text-center">
-  User List (React - Client Hydrated)
-</h2>
-
-<UserListClient client:load />
+<UserListClient client:load users={users} />

@@ -4,22 +4,30 @@ import { Repository } from "../repositories/backend";
 
 const userRepo = new Repository<User>("users", "http://localhost:8000/");
 
-export default function UserList() {
-  const [users, setUsers] = useState<User[]>([]);
+interface Props {
+  users: User[];
+}
+
+export default function UserList({ users: initialUsers }: Props) {
+  const [users, setUsers] = useState<User[]>(initialUsers);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({ username: "", password: "" });
 
   useEffect(() => {
-    userRepo
-      .getAll()
-      .then(setUsers)
-      .catch((err) => {
-        setErrorMsg(
-          err.message ?? "Unknown error occurred while fetching users."
+    const interval = setInterval(() => {
+      userRepo
+        .getAll()
+        .then((freshUsers) => {
+          setUsers(freshUsers);
+        })
+        .catch((err) =>
+          console.warn("Error refreshing users", err.message ?? err)
         );
-      });
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const openModal = (user: User) => {
@@ -63,6 +71,11 @@ export default function UserList() {
 
   return (
     <>
+      <h1 className="text-2xl font-semibold text-center mt-8">
+        User List (SSR + Client Side Rendering)
+        <span className="text-sm text-gray-500 ml-2">({users.length})</span>
+      </h1>
+
       <ul className="max-w-4xl mx-auto mt-16 bg-white shadow-lg rounded-lg divide-y divide-gray-200">
         {users.map((u) => (
           <li
