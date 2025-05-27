@@ -3,7 +3,11 @@ import type { User } from "../entities/User";
 import { Repository } from "../repositories/backend";
 import { useUserStore } from "../store/UserStore";
 
-const userRepo = new Repository<User>("users", "http://localhost:8000/");
+const isServer = typeof window === "undefined";
+
+const baseURL = isServer ? "http://backend:8000" : "http://localhost:8000";
+
+const userRepo = new Repository<User>("users", baseURL);
 
 interface Props {
   users: User[];

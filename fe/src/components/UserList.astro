@@ -3,7 +3,11 @@ import { Repository } from '../repositories/backend';
 import type { User } from '../entities/User';
 import UserListClient from '../components/UserListClient.tsx';
 
-const userRepo = new Repository<User>('users');
+const isServer = typeof window === 'undefined';
+
+const baseURL = isServer ? 'http://backend:8000' : 'http://localhost:8000';
+
+const userRepo = new Repository<User>("users", baseURL);
 const users = await userRepo.getAll(); // SSR
 ---
 
