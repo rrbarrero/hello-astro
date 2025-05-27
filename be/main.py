@@ -1,8 +1,16 @@
-from uuid import uuid4
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins="*",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class User(BaseModel):
@@ -12,15 +20,24 @@ class User(BaseModel):
     password: str
 
 
-fake_db: dict[int, User] = {
-    1: User(
-        id=str(uuid4()),
+class UpdateUser(BaseModel):
+    username: str
+    password: str
+
+
+user1_id = "492280ce-d1ed-442e-a5f8-789fe00553c3"
+user2_id = "9ac5f687-a128-40dc-948e-7a554254e54a"
+
+
+fake_db: dict[str, User] = {
+    user1_id: User(
+        id=user1_id,
         username="john_doe",
         email="mail1@gmail.com",
         password="password123",
     ),
-    2: User(
-        id=str(uuid4()),
+    user2_id: User(
+        id=user2_id,
         username="jane_doe",
         email="prop2@gmail.com",
         password="password456",
@@ -34,24 +51,26 @@ def list_users():
 
 
 @app.get("/users/{user_id}/", response_model=User)
-def get_user(user_id: int):
+def get_user(user_id: str):
     return fake_db[user_id]
 
 
 @app.post("/users/", response_model=User)
 def create_user(user: User):
-    user = fake_db[len(fake_db) + 1] = user
+    user = fake_db[user.id] = user
     return user
 
 
 @app.put("/users/{user_id}/", response_model=User)
-def update_user(user_id: int, user: User):
-    fake_db[user_id] = user
+def update_user(user_id: str, user_data: UpdateUser):
+    user = fake_db[user_id]
+    user.username = user_data.username
+    user.password = user_data.password
     return user
 
 
 @app.delete("/users/{user_id}/")
-def delete_user(user_id: int):
+def delete_user(user_id: str):
     fake_db.pop(user_id, None)
 
 

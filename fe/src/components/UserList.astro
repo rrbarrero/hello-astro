@@ -1,44 +1,9 @@
 ---
-import type { User } from "../entities/User";
-import { Repository } from "../repositories/backend";
-
-
-const userRepo = new Repository<User>('users', 'http://localhost:8000/');
-
-let users: User[] = [];
-let errorMsg: string | null = null;
-
-try {
-  users = await userRepo.getAll();
-} catch (err: any) {
-  errorMsg = err.message ?? 'Unknow error occurred while fetching users.';
-}
+import UserListClient from './UserListClient.tsx';
 ---
+
 <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4 text-center">
-  User List
+  User List (React - Client Hydrated)
 </h2>
-{errorMsg ? (
-  <div class="mt-16 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-center space-x-2">
-    <!-- ... -->
-  </div>
-) : (
-  <ul class="max-w-4xl mx-auto mt-16 bg-white shadow-lg rounded-lg divide-y divide-gray-200">
-    {users.map((u) => (
-      <li class="w-full px-6 py-4 flex items-center space-x-8 hover:bg-gray-50 transition">
-        <span class="flex-1 text-sm text-gray-400">{u.id}</span>
 
-        <div class="flex-1">
-          <p class="font-semibold text-gray-900">{u.username}</p>
-          <p class="text-sm text-gray-500">&lt;{u.email}&gt;</p>
-        </div>
-
-        <button
-          class="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 transition"
-          onclick={`alert('Clicked on ${u.username}')`}
-        >
-          Details
-        </button>
-      </li>
-    ))}
-  </ul>
-)}
+<UserListClient client:load />
