@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { User } from "../entities/User";
 import { Repository } from "../repositories/backend";
+import { useUserStore } from "../store/UserStore";
 
 const userRepo = new Repository<User>("users", "http://localhost:8000/");
 
@@ -9,26 +10,39 @@ interface Props {
 }
 
 export default function UserList({ users: initialUsers }: Props) {
-  const [users, setUsers] = useState<User[]>(initialUsers);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({ username: "", password: "" });
 
+  const { users, setUsers } = useUserStore();
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      userRepo
-        .getAll()
-        .then((freshUsers) => {
-          setUsers(freshUsers);
-        })
-        .catch((err) =>
-          console.warn("Error refreshing users", err.message ?? err)
-        );
+    setUsers(initialUsers);
+  }, [initialUsers, setUsers]);
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const fresh = await userRepo.getAll();
+
+        const changed = fresh.filter((newUser) => {
+          const existing = users.find((u: User) => u.id === newUser.id);
+          return existing && existing.username !== newUser.username;
+        });
+
+        if (changed.length > 0) {
+          console.log("Username changes detected:", changed);
+        }
+
+        setUsers(fresh);
+      } catch (err) {
+        console.warn("Error refreshing users", err);
+      }
     }, 30000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [users, setUsers]);
 
   const openModal = (user: User) => {
     setSelectedUser(user);
@@ -44,59 +58,62 @@ export default function UserList({ users: initialUsers }: Props) {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedUser) return;
+    if (!selectedUser || !formData.password.trim()) {
+      alert("Password is required.");
+      return;
+    }
 
     try {
       const updatedUser = await userRepo.update(selectedUser.id, {
         username: formData.username,
-        password: formData.password || undefined,
+        password: formData.password,
       });
 
-      setUsers((prev) =>
-        prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
+      const newUsers = users.map((u: User) =>
+        u.id === updatedUser.id ? updatedUser : u
       );
+      setUsers(newUsers);
       closeModal();
     } catch (err: any) {
       alert(err.message ?? "Error updating user");
     }
   };
 
-  if (errorMsg) {
-    return (
-      <div className="mt-16 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-        {errorMsg}
-      </div>
-    );
-  }
-
   return (
     <>
-      <h1 className="text-2xl font-semibold text-center mt-8">
-        User List (SSR + Client Side Rendering)
-        <span className="text-sm text-gray-500 ml-2">({users.length})</span>
-      </h1>
-
       <ul className="max-w-4xl mx-auto mt-16 bg-white shadow-lg rounded-lg divide-y divide-gray-200">
-        {users.map((u) => (
-          <li
-            key={u.id}
-            className="w-full px-6 py-4 flex items-center space-x-8 hover:bg-gray-50 transition"
-          >
-            <span className="flex-1 text-sm text-gray-400">{u.id}</span>
+        {users.map((u: User) => {
+          const initial = initialUsers.find((user) => user.id === u.id);
+          const usernameChanged = initial && initial.username !== u.username;
 
-            <div className="flex-1">
-              <p className="font-semibold text-gray-900">{u.username}</p>
-              <p className="text-sm text-gray-500">&lt;{u.email}&gt;</p>
-            </div>
-
-            <button
-              className="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 transition"
-              onClick={() => openModal(u)}
+          return (
+            <li
+              key={u.id}
+              className="w-full px-6 py-4 flex items-center space-x-8 hover:bg-gray-50 transition"
             >
-              Update
-            </button>
-          </li>
-        ))}
+              <span className="flex-1 text-sm text-gray-400">{u.id}</span>
+
+              <div className="flex-1">
+                <p className="font-semibold text-gray-900">
+                  {u.username}
+                  {usernameChanged && (
+                    <span className="ml-2 text-xs text-red-600">
+                      (Previously: {initial?.username})
+                    </span>
+                  )}
+                </p>
+                <p className="text-sm text-gray-500">&lt;{u.email}&gt;</p>
+              </div>
+
+              <button
+                className="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 transition"
+                onClick={() => openModal(u)}
+              >
+                Update
+              </button>
+            </li>
+          );
+        })}
       </ul>
 
       {/* Modal */}
@@ -124,6 +141,7 @@ export default function UserList({ users: initialUsers }: Props) {
                 </label>
                 <input
                   type="password"
+                  required
                   className="w-full border px-3 py-2 rounded"
                   value={formData.password}
                   onChange={(e) =>
